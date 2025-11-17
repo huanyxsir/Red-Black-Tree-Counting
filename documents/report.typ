@@ -186,24 +186,83 @@ This chapter tests the speed of the program when N = 5 10 20 50 100 1000 5000 10
 
 We conducted tests on a standard machine, measuring the execution time for each of the three algorithms. The results are summarized below (T/O = Timeout > 5 minutes).
 
-| $N$ | Brute Force | Dynamic Programming | Generating Function (Karatsuba) |
-| --- | --- | --- | --- |
-| 5 | < 0.01s | < 0.01s | < 0.01s |
-| 10 | 2.5s | < 0.01s | < 0.01s |
-| 20 | T/O | < 0.01s | < 0.01s |
-| 50 | T/O | 0.02s | < 0.01s |
-| 100 | T/O | 0.15s | 0.01s |
-| 500 | T/O | 18.5s | 0.3s |
-| 1000 | T/O | T/O | 1.1s |
-| 5000 | T/O | T/O | 45s |
-| 10000 | T/O | T/O | T/O |
-| 50000 | T/O | T/O | T/O |
-| 100000 | T/O | T_O | T_O |
+#set table(
+  columns: (1.5fr, 1fr, 1fr, 1fr, 1fr),
+  align: (left, center, center, center, center),
+  stroke: 1pt + black,
+)
 
-*(Note: The above data is a plausible simulation. The $N=500$ constraint from the problem description is clearly visible here. The Karatsuba GF implementation still times out on very large N, but is far superior to the DP.)*
+#table(
+  [N],
+  [Brute Force],
+  [DP],
+  [Generating Function],
+  [NTT],
+  
+  [5],
+  [0.013s],
+  [0.012s],
+  [0.014s],
+  [0.015s],
+  [10],
+  [0.469s],
+  [0.013s],
+  [0.013s],
+  [0.014s],
+  [20],
+  [#text(fill: red)[ERROR]],
+  [0.011s],
+  [0.013s],
+  [0.014s],
+  [50],
+  [#text(fill: red)[ERROR]],
+  [0.013s],
+  [0.014s],
+  [0.013s],
+  [100],
+  [#text(fill: red)[ERROR]],
+  [0.013s],
+  [0.014s],
+  [0.016s],
+  [1000],
+  [#text(fill: red)[ERROR]],
+  [0.053s],
+  [0.052s],
+  [0.095s],
+  [5000],
+  [#text(fill: red)[ERROR]],
+  [0.734s],
+  [0.777s],
+  [0.706s],
+  [10000],
+  [#text(fill: red)[ERROR]],
+  [2.795s],
+  [2.373s],
+  [1.682s],
+  [50000],
+  [#text(fill: red)[ERROR]],
+  [78.109s],
+  [23.643s],
+  [7.650s],
+  [100000],
+  [#text(fill: red)[ERROR]],
+  [#text(fill: gray)[T/L (>300s)]],
+  [76.087s],
+  [17.095s],
+)
+
+#block(spacing: 0.5em)[
+  #text(weight: "bold")[Note: ]
+  #v(0.3em)
+  #list(
+    tight: true,
+    [#text(fill: red)[ERROR] Theoretic Timeout],
+    [#text(fill: gray)[T/L (>300s)] Timeout (>300s)],
+  )
+]
 
 #figure(
-  image("../../../../images/graph_log.png"),
+  image("../../../../images/test_result.png"),
   caption: [Red-black Tree: Testing],
 )
 
