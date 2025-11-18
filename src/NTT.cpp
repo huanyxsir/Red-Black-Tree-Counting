@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 using namespace std;
 // Use 128-bit integers for CRT calculations to prevent overflow
 using ll = __int128;

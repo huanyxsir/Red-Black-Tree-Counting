@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <assert.h>
+#include <cmath>
 
 using namespace std;
 
