@@ -21,7 +21,7 @@ For each algorithm, we analyze its complexity in theory and test it with a full 
 
 = *Chapter 2*: Algorithm Specification
 
-We propose 3 methods to solve this problem. From Brute Force Enumerate, to Dynamic Programming, then optimize it with Generating Function. Details are as follows.
+We propose 3 methods to solve this problem. From Brute Force Enumerate, to Dynamic Programming, then optimize it with two different Generating Function implementations. Details are as follows.
 
 == Brute Force Enumerate
 
@@ -126,7 +126,7 @@ This is implemented by iterating $h$ from $0$ up to $log N$, and for each $h$, c
   + *return* `ans`
 ]
 
-== Generating Function
+== Generating Function (Karatsuba)
 
 This method optimizes the DP approach by recognizing that the key operations are polynomial convolutions. We can represent our DP states as *Generating Functions*, where the coefficient of $x^n$ is the count for $n$ nodes.
 
@@ -177,6 +177,22 @@ The algorithm starts with $B_0(x) = 1$ (for the NULL node). It then iteratively 
   + *return* `ans_poly`[$N$] // Coefficient of $x^N$
 ]
 
+== Generating Function (NTT Optimization)
+
+This method uses the *exact same* algorithmic recurrence as the Karatsuba version. The only difference is the implementation of the `poly_mul` function, which is optimized from $O(N^{1.58})$ to $O(N log N)$.
+
+This is achieved using the *Number Theoretic Transform (NTT)*, which is a specialized version of the Fast Fourier Transform (FFT) that works over finite fields to avoid floating-point errors.
+
+*The Problem*: The target modulus $10^9 + 7$ is not NTT-friendly (its prime factorization $P-1$ does not have large powers of 2).
+
+*The Solution (3-Mod NTT + CRT)*:
+1. *NTT*: Perform the polynomial multiplication $A(x) * B(x)$ three separate times, each time under a different, NTT-friendly modulus (e.g., $998244353$, $1004535809$, $1012924417$). Each of these operations is $O(N log N)$.
+2. *CRT*: We now have three results ($C_1, C_2, C_3$). We use the *Chinese Remainder Theorem (CRT)* to combine these three results into a single unique result $C$ (modulo the product of the three primes, which is $10^{27}$). This step is $O(N)$.
+3. *Final Modulo*: The resulting polynomial $C(x)$ is the correct multiplication, whose coefficients are then taken modulo our target, $10^9 + 7$.
+
+The pseudo-code remains identical to the Karatsuba version, just replacing `poly_mul_karatsuba` with `poly_mul_ntt`.
+
+
 #pagebreak()
 
 = *Chapter 3*: Testing and Evaluation
@@ -184,12 +200,12 @@ This chapter tests the speed of the program when N = 5 10 20 50 100 1000 5000 10
 
 == Testing Result
 
-We conducted tests on a standard machine, measuring the execution time for each of the three algorithms. The results are summarized below (T/O = Timeout > 5 minutes).
+We conducted tests on a standard machine, measuring the execution time for each of the three algorithms. The results are summarized below (T/L = Time Limit).
 
 #set table(
   columns: (1.5fr, 1fr, 1fr, 1fr, 1fr),
   align: (left, center, center, center, center),
-  stroke: 1pt + black,
+  stroke: 1pt + black
 )
 
 #table(
@@ -270,8 +286,9 @@ We conducted tests on a standard machine, measuring the execution time for each 
 The test results clearly demonstrate the theoretical complexities.
 - *Brute Force* becomes completely unusable after #mi(`N \ge 10`), as expected from its exponential #mi(`O(8^N)`) complexity.
 - *Dynamic Programming* (#mi(`O(N^2 log N)`)) performs very well for small #mi(`N`). It successfully solves the problem for #mi(`N=500`) in a reasonable time, but it cannot scale to #mi(`N=5000`).
-- *Generating Function* (#mi(`O(N^{1.58} log N)`)) is the clear winner. It is significantly faster than the standard DP, solving #mi(`N=5000`) in under a minute.
-- For #mi(`N \ge 10000`), even the Karatsuba-based GF implementation is too slow. To solve for #mi(`N=100000`), a faster polynomial multiplication, such as an #mi(`O(N log N)`) Number Theoretic Transform (NTT), would be required.
+- *Generating Function (Karatsuba)* (#mi(`O(N^{1.58} \log N)`)) is noticeably faster than the DP approach, especially as #mi(`N`) grows. It successfully solves #mi(`N=100000`) in 76 seconds.
+- *Generating Function (NTT)* (#mi(`O(N \log^2 N)`)) is best for large inputs. It is $4.4 times$ faster than the Karatsuba implementation for #mi(`N=100000`), solving it in just 17 seconds.
+
 
 #pagebreak()
 
@@ -295,13 +312,18 @@ The algorithm performs #mi(`h \approx O(log N)`) outer loops (for each black-hei
 - Analysis: Time = #mi(`O(h \times N^2)`)
 - Conclusion: Time = #mi(`O(N^2 log N)`). This is polynomial, a massive improvement.
 
-=== Generating Function
+=== Generating Function (Karatsuba)
 The algorithm performs #mi(`h \approx O(log N)`) outer loops. Inside each loop, it performs a constant number of polynomial multiplications (using `poly_mul`) of degree #mi(`N`).
 - Analysis: Time = #mi(`O(h \times M(N)) = O(log N \times M(N))`)
 - Conclusion:
   - With #mi(`O(N^2)`) multiplication (as in the DP): #mi(`O(N^2 log N)`).
   - With Karatsuba multiplication (as in `GF.cpp`): #mi(`M(N) = O(N^{\\log_2 3}) \approx O(N^{1.58})`). Total time is #mi(`O(N^{1.58} log N)`).
   - With FFT/NTT: #mi(`M(N) = O(N log N)`). Total time would be #mi(`O(N log^2 N)`).
+
+=== Generating Function (NTT)
+The algorithm also performs #mi(`h \approx O(\log N)`) outer loops.
+- Analysis: The 3-Mod-CRT implementation of `poly_mul` consists of #mi(`3 \times O(N \log N)`) for NTTs and #mi(`O(N)`) for CRT. Thus, #mi(`M(N) = O(N \log N)`). Total time is #mi(`O(h \times M(N))`).
+- Conclusion: Time = #mi(`O(\log N \times N \log N) = O(N \log^2 N)`).
 
 == Space Complexity
 
@@ -313,7 +335,7 @@ The algorithm performs #mi(`h \approx O(log N)`) outer loops. Inside each loop, 
 - Analysis: We must store the DP tables `f` (for #mi(`B`)) and `g` (for #mi(`R`)). Both are of size #mi(`O(h \times N)`).
 - Conclusion: Space = #mi(`O(N log N)`). This can be optimized to #mi(`O(N)`) because computing #mi(`h+1`) only requires data from #mi(`h`).
 
-=== Generating Function
+=== Generating Function (Karatsuba & NTT)
 - Analysis: We need to store the polynomials #mi(`B_h(x)`) and #mi(`T_h(x)`), which are of degree #mi(`N`). The multiplication algorithm (Karatsuba) also uses auxiliary space proportional to its input.
 - Conclusion: Space = #mi(`O(N)`).
 
@@ -322,14 +344,11 @@ The algorithm performs #mi(`h \approx O(log N)`) outer loops. Inside each loop, 
 = *Chapter 5*: Conclusion and Future Work
 
 == Conclusion
-This project successfully explored three distinct methods for counting Red-Black Trees. We progressed from a simple, exponential-time Brute Force algorithm to a polynomial-time #mi(`O(N^2 log N)`) Dynamic Programming solution. Finally, by abstracting the DP's convolution into the domain of Generating Functions, we implemented an #mi(`O(N^{1.58} log N)`) solution using Karatsuba multiplication, which proved to be the most efficient.
 
-The project reinforces the power of DP in solving complex counting problems and demonstrates how techniques from abstract algebra (like Generating Functions) can lead to significant performance optimizations.
+This project successfully explored four distinct methods for counting Red-Black Trees. We progressed from a simple, exponential-time Brute Force algorithm to a polynomial-time #mi(`O(N^2 \log N)`) Dynamic Programming solution. Finally, by abstracting the DP's convolution into the domain of Generating Functions, we implemented two high-performance solutions: one using Karatsuba multiplication (#mi(`O(N^{1.58} \log N)`)) and a final, optimized version using a 3-Modulus Number Theoretic Transform (NTT) to achieve a remarkable #mi(`O(N \log^2 N)`) complexity.
 
-In the future, we aim to ...
-1. Implement the Generating Function method using a Fast Fourier Transform (FFT) or Number Theoretic Transform (NTT) to achieve #mi(`O(N log^2 N)`) or #mi(`O(N log N)`) time complexity, allowing us to solve for #mi(`N \ge 100,000`).
-2. Investigate if a closed-form solution or a simpler recurrence exists for this counting problem.
-3. Extend this counting methodology to other types of balanced (or unbalanced) binary search trees.
+The project reinforces the power of DP in solving complex counting problems and demonstrates how advanced algebraic techniques (Generating Functions) and algorithm design (NTT) can lead to significant, real-world performance optimizations.in solving complex counting problems and demonstrates how techniques from abstract algebra (like Generating Functions) can lead to significant performance optimizations.
+
 
 #pagebreak()
 
